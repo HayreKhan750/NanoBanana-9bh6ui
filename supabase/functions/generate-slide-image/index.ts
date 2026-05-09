@@ -11,44 +11,50 @@ Deno.serve(async (req) => {
     const baseUrl = Deno.env.get('ONSPACE_AI_BASE_URL');
 
     const body = await req.json();
-    const { slideTitle, slideType, theme, accentColor, userId } = body;
+    const { imagePrompt, slideTitle, slideType, theme, userId } = body;
 
-    // Build a cinematic, specific image prompt for the slide
+    // Use AI-supplied imagePrompt if available, else build a rich fallback
     const themeDescriptions: Record<string, string> = {
-      startup: 'dark tech startup aesthetic, neon accents, bold typography, futuristic',
-      ted: 'dramatic red and black TED stage aesthetic, powerful and inspiring',
-      apple: 'clean minimal Apple keynote style, white space, elegant',
-      futuristic: 'neural network AI visualization, deep blue and gold, futuristic',
-      cyberpunk: 'neon green and pink cyberpunk cityscape, gritty and electric',
-      glass: 'glassmorphism aesthetic, translucent panels, deep blue and purple',
-      minimal: 'luxury minimal gold and black, elegant and refined',
-      corporate: 'professional corporate blue and gold, trustworthy and polished',
-      dark_neon: 'vivid neon orange and purple, atmospheric dark background',
-      investor: 'data visualization, financial charts, clean blue and green',
-      agency: 'creative agency bold orange and pink, expressive',
-      education: 'educational indigo and cyan, structured and modern',
-      ethiopian: 'Ethiopian green, yellow and red heritage colors, vibrant patterns',
-      academic: 'academic research blue and green, structured and authoritative',
-      brutalist: 'brutalist yellow and red, raw and bold design',
+      apple: 'clean minimalist Apple product aesthetic, white and silver, shallow depth of field, studio lighting',
+      startup: 'dark tech startup cinematic, gold and deep purple neon accents, dramatic shadows, moody atmosphere',
+      ted: 'powerful dramatic red spotlight on dark stage, cinematic wide angle, emotional intensity',
+      futuristic: 'neural network visualization, deep space blue and gold particles, AI consciousness, 8K ultra detail',
+      cyberpunk: 'neon-drenched cyberpunk megacity, electric green and hot pink reflections, rain-slicked streets',
+      glass: 'crystalline glassmorphism structures, translucent layers, deep blue and violet, ethereal light refraction',
+      minimal: 'luxury minimal composition, gold leaf on matte black, Cartier-level elegance, single dramatic light source',
+      corporate: 'premium corporate architectural photography, geometric glass facade, blue sky, trust and authority',
+      dark_neon: 'dark atmospheric neon lights, orange and purple glow, cinematic fog, urban noir',
+      investor: 'financial data visualization, glowing blue graphs ascending, clean dark background, precision and growth',
+      agency: 'bold creative agency aesthetic, vibrant orange and pink splashes, dynamic composition, artistic energy',
+      education: 'modern educational environment, indigo and cyan tones, knowledge and discovery, warm inspiring light',
+      ethiopian: 'rich Ethiopian cultural motifs, green gold and red, traditional patterns meeting modern design',
+      academic: 'academic research laboratory, structured blueprints, authoritative navy and forest green',
+      brutalist: 'raw brutalist concrete architecture, stark yellow and red geometric forms, high contrast',
     };
 
-    const themeStyle = themeDescriptions[theme] || 'professional dark cinematic';
+    const themeStyle = themeDescriptions[theme] || 'professional cinematic dark aesthetic, dramatic lighting';
 
-    const slideTypePrompts: Record<string, string> = {
-      title: `Epic cinematic wide-angle hero visual for "${slideTitle}", ${themeStyle}, 16:9 aspect ratio, no text, ultra high resolution`,
-      concept: `Abstract conceptual visualization representing "${slideTitle}", ${themeStyle}, sophisticated depth and lighting, no text, photorealistic`,
-      data: `Data visualization and analytics concept representing "${slideTitle}", glowing graphs and charts, ${themeStyle}, no text`,
-      infographic: `Process and workflow visualization for "${slideTitle}", connected nodes and flow, ${themeStyle}, no text`,
-      cta: `Inspiring call-to-action background for "${slideTitle}", dynamic and energetic, ${themeStyle}, no text`,
-      agenda: `Clean structured layout background, ${themeStyle}, minimal, no text`,
-      summary: `Convergence and conclusion visual for "${slideTitle}", ${themeStyle}, powerful composition, no text`,
-      quote: `Dramatic atmospheric background for a quote about "${slideTitle}", ${themeStyle}, emotional depth, no text`,
-      section: `Bold section divider visual, ${themeStyle}, strong geometric forms, no text`,
+    const slideTypeEnhancements: Record<string, string> = {
+      title: `Epic cinematic hero visual, 16:9 wide angle, dramatic composition, perfect for a title slide`,
+      concept: `Abstract conceptual visualization, sophisticated depth, perfect for illustrating a key idea`,
+      data: `Data visualization concept, glowing analytical elements, perfect for a data-driven slide`,
+      infographic: `Clean process or system visualization, connected elements flowing, perfect for how-it-works slides`,
+      cta: `Inspiring aspirational scene, forward momentum, perfect for a call-to-action slide`,
+      agenda: `Organized structured visual rhythm, clear pathways, perfect for an agenda overview`,
+      summary: `Convergence and synthesis visual, multiple streams becoming one, perfect for conclusions`,
+      quote: `Atmospheric moody background, emotional depth and weight, perfect for a powerful quote`,
+      section: `Bold geometric transition visual, strong visual break, perfect for a section divider`,
     };
 
-    const imagePrompt = slideTypePrompts[slideType] || slideTypePrompts.concept;
+    const typeHint = slideTypeEnhancements[slideType] || slideTypeEnhancements.concept;
 
-    console.log('Generating slide image with Nano Banana 2...');
+    // Build the final image prompt
+    const finalPrompt = imagePrompt
+      ? `${imagePrompt}. Style: ${themeStyle}. Photorealistic, ultra high resolution, no text in image, 16:9 composition.`
+      : `Create a stunning ${typeHint} about "${slideTitle}". Style: ${themeStyle}. Photorealistic or artistic, ultra high resolution, cinematic lighting, zero text or typography in the image, 16:9 widescreen composition.`;
+
+    console.log('Generating slide image with Nano Banana 2 (gemini-3.1-flash-image-preview)...');
+    console.log('Prompt preview:', finalPrompt.substring(0, 100));
 
     const aiResponse = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
@@ -62,7 +68,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: imagePrompt,
+            content: finalPrompt,
           },
         ],
         image_config: {
@@ -81,10 +87,10 @@ Deno.serve(async (req) => {
     const imageUrl = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!imageUrl) {
-      throw new Error('No image returned from AI');
+      throw new Error('No image returned from Nano Banana 2');
     }
 
-    // Convert base64 to blob and upload to Supabase Storage
+    // Upload to Supabase Storage
     const base64Data = imageUrl.split(',')[1];
     const binaryStr = atob(base64Data);
     const bytes = new Uint8Array(binaryStr.length);
@@ -109,15 +115,13 @@ Deno.serve(async (req) => {
         upsert: false,
       });
 
-    if (uploadError) {
-      throw new Error(`Storage upload error: ${uploadError.message}`);
-    }
+    if (uploadError) throw new Error(`Storage upload error: ${uploadError.message}`);
 
     const { data: { publicUrl } } = supabase.storage
       .from('slide-images')
       .getPublicUrl(fileName);
 
-    console.log('Image generated and stored:', publicUrl);
+    console.log('Nano Banana 2 image stored at:', publicUrl);
 
     return new Response(JSON.stringify({ imageUrl: publicUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

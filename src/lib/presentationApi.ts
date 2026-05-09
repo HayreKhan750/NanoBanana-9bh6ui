@@ -33,12 +33,13 @@ export async function generatePresentationAI(
 // Generate image for a single slide via Edge Function
 // ────────────────────────────────────────────────
 export async function generateSlideImageAI(
-  slide: Slide,
+  slide: Slide & { imagePrompt?: string },
   theme: string,
   userId?: string
 ): Promise<string> {
   const { data, error } = await supabase.functions.invoke('generate-slide-image', {
     body: {
+      imagePrompt: slide.imagePrompt || undefined,
       slideTitle: slide.title,
       slideType: slide.type,
       theme,

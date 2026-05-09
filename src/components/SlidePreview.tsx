@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import type { Slide } from "@/types/presentation";
-import { TrendingUp } from "lucide-react";
 
 interface SlidePreviewProps {
   slide: Slide;
@@ -23,112 +22,107 @@ const SLIDE_TYPE_ACCENT: Record<string, string> = {
   cta: "#F5C518",
 };
 
-function MiniChart({ data }: { data: Slide["chartData"] }) {
-  if (!data) return null;
-  const values = data.datasets[0]?.data || [];
-  const max = Math.max(...values, 1);
+const TYPE_LABELS: Record<string, string> = {
+  title: "TITLE",
+  agenda: "AGENDA",
+  section: "SECTION",
+  concept: "CONCEPT",
+  data: "DATA",
+  infographic: "INFO",
+  quote: "QUOTE",
+  comparison: "COMPARE",
+  timeline: "TIMELINE",
+  summary: "SUMMARY",
+  cta: "CTA",
+};
 
-  if (data.type === "bar") {
-    return (
-      <div className="flex items-end gap-0.5 h-6 mt-1">
-        {values.slice(0, 6).map((v, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-sm"
-            style={{ height: `${(v / max) * 100}%`, background: "#F5C518", opacity: 0.7 }}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (data.type === "pie" || data.type === "donut") {
-    return (
-      <div className="w-6 h-6 rounded-full mt-1" style={{ background: "conic-gradient(#F5C518 0% 45%, #8B5CF6 45% 75%, #06B6D4 75% 93%, #10B981 93% 100%)" }} />
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-1 mt-1">
-      <TrendingUp className="w-3 h-3" style={{ color: "#10B981" }} />
-      <span className="text-[8px]" style={{ color: "#10B981" }}>
-        +{Math.round((values[values.length - 1] / values[0] - 1) * 100)}%
-      </span>
-    </div>
-  );
-}
-
-export default function SlidePreview({ slide, isActive, onClick, scale = 1 }: SlidePreviewProps) {
+export default function SlidePreview({ slide, isActive, onClick }: SlidePreviewProps) {
   const accent = useMemo(() => SLIDE_TYPE_ACCENT[slide.type] || "#F5C518", [slide.type]);
-
-  const isTitle = slide.type === "title" || slide.type === "cta";
-  const hasBg = slide.visualUrl && (isTitle || slide.type === "section");
+  const hasImage = !!slide.visualUrl;
 
   return (
     <div
+      className={`slide-thumbnail ${isActive ? "active" : ""}`}
       onClick={onClick}
-      className="slide-thumbnail relative overflow-hidden"
       style={{
         background: slide.backgroundColor || "#0A0A0F",
-        borderColor: isActive ? accent : "transparent",
-        transform: `scale(${scale})`,
-        transformOrigin: "top left",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* Background image for title slides */}
-      {hasBg && (
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${slide.visualUrl})`, opacity: 0.25 }}
+      {/* AI-generated background image */}
+      {hasImage && (
+        <img
+          src={slide.visualUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: slide.type === "title" || slide.type === "cta" ? 0.6 : 0.35 }}
         />
       )}
 
-      {/* Accent gradient */}
+      {/* Gradient overlay */}
       <div
-        className="absolute top-0 left-0 right-0 h-0.5"
-        style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+        className="absolute inset-0"
+        style={{
+          background: hasImage
+            ? "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)"
+            : `linear-gradient(135deg, ${slide.backgroundColor || "#0A0A0F"}, rgba(0,0,0,0.5))`,
+        }}
       />
 
-      {/* Slide number + type badge */}
-      <div className="absolute top-1 right-1 flex items-center gap-1">
-        <span
-          className="text-[6px] font-bold px-1 rounded"
-          style={{ background: `${accent}20`, color: accent }}
-        >
-          {slide.type.toUpperCase()}
-        </span>
+      {/* Accent top bar */}
+      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: accent }} />
+
+      {/* Type badge */}
+      <div
+        className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider"
+        style={{ background: `${accent}25`, color: accent, border: `1px solid ${accent}40` }}
+      >
+        {TYPE_LABELS[slide.type] || slide.type.toUpperCase()}
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 p-2 h-full flex flex-col justify-center">
-        {isTitle ? (
-          <div className="text-center">
-            <div className="text-[8px] font-bold text-white leading-tight line-clamp-2">{slide.title}</div>
-            {slide.subtitle && (
-              <div className="text-[6px] mt-0.5 line-clamp-1" style={{ color: "rgba(255,255,255,0.5)" }}>{slide.subtitle}</div>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="text-[7px] font-bold text-white mb-1 line-clamp-1">{slide.title}</div>
-            <div className="space-y-0.5">
-              {slide.content.slice(0, 3).map((item, i) => (
-                <div key={i} className="flex items-start gap-0.5">
-                  <div className="w-0.5 h-0.5 rounded-full mt-0.5 flex-shrink-0" style={{ background: accent }} />
-                  <span className="text-[6px] line-clamp-1" style={{ color: "rgba(255,255,255,0.6)" }}>{item}</span>
-                </div>
-              ))}
-            </div>
-            {slide.chartData && <MiniChart data={slide.chartData} />}
-          </>
+      {/* Slide number */}
+      <div className="absolute top-1.5 right-1.5 text-[8px] font-mono text-white/30">
+        {String(slide.order).padStart(2, "0")}
+      </div>
+
+      {/* Content preview */}
+      <div className="absolute bottom-0 left-0 right-0 p-2">
+        <p
+          className="text-white font-bold leading-tight truncate"
+          style={{ fontSize: "9px" }}
+        >
+          {slide.title}
+        </p>
+        {slide.content.length > 0 && (
+          <p className="text-white/40 truncate mt-0.5" style={{ fontSize: "7px" }}>
+            {slide.content[0]}
+          </p>
         )}
       </div>
 
-      {/* Bottom accent line */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-px"
-        style={{ background: `linear-gradient(90deg, transparent, ${accent}40, transparent)` }}
-      />
+      {/* No-image placeholder grid */}
+      {!hasImage && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-10">
+          <div className="grid grid-cols-3 gap-0.5">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="w-4 h-3 rounded-sm" style={{ background: accent }} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Chart mini indicator for data slides */}
+      {slide.type === "data" && slide.chartData && !hasImage && (
+        <div className="absolute inset-x-2 top-8 bottom-6 flex items-end gap-0.5 justify-center">
+          {slide.chartData.datasets[0]?.data.slice(0, 5).map((v, i) => {
+            const max = Math.max(...slide.chartData!.datasets[0].data, 1);
+            return (
+              <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${(v / max) * 60}%`, background: accent, opacity: 0.6 }} />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

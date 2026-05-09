@@ -1,8 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const SLIDE_TYPES = ['title', 'agenda', 'concept', 'data', 'infographic', 'summary', 'cta'];
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -29,31 +27,63 @@ Deno.serve(async (req) => {
     } = config;
 
     const inputDescription = youtubeUrl
-      ? `YouTube video: ${youtubeUrl}`
+      ? `YouTube video URL: ${youtubeUrl}`
       : websiteUrl
-      ? `Website: ${websiteUrl}`
+      ? `Website URL: ${websiteUrl}`
       : prompt || 'A professional presentation';
 
-    const systemPrompt = `You are an expert presentation designer and storyteller. Generate a complete, cinematic presentation structure as JSON.
+    // Theme accent color mapping
+    const themeAccents: Record<string, { accent: string; bg: string }> = {
+      apple: { accent: '#0071E3', bg: '#1D1D1F' },
+      startup: { accent: '#F5C518', bg: '#0A0A0F' },
+      ted: { accent: '#FF2B2B', bg: '#0F0F0F' },
+      minimal: { accent: '#D4AF37', bg: '#0C0C0C' },
+      glass: { accent: '#06B6D4', bg: '#080818' },
+      cyberpunk: { accent: '#00FF88', bg: '#0A0010' },
+      academic: { accent: '#1E40AF', bg: '#FAFAFA' },
+      corporate: { accent: '#1E3A5F', bg: '#FFFFFF' },
+      futuristic: { accent: '#F5C518', bg: '#050510' },
+      dark_neon: { accent: '#FF6B35', bg: '#07070F' },
+      brutalist: { accent: '#FFFF00', bg: '#000000' },
+      ethiopian: { accent: '#FCDD09', bg: '#1A0A00' },
+      investor: { accent: '#0EA5E9', bg: '#040D17' },
+      agency: { accent: '#F97316', bg: '#0F0318' },
+      education: { accent: '#4F46E5', bg: '#FFFFFF' },
+    };
+    const colors = themeAccents[stylePreset] || { accent: '#F5C518', bg: '#0A0A0F' };
 
-Rules:
-- Return ONLY valid JSON, no markdown fences, no extra text
-- Create exactly ${slideCount} slides
-- Each slide must have: id, order, type, title, subtitle (optional), content (array of strings), speakerNotes, animationType, layoutVariant, accentColor, backgroundColor, chartData (only for "data" type)
-- Slide types: ${SLIDE_TYPES.join(', ')} — use a good mix
-- tone: ${tone}
-- style/theme: ${stylePreset}
-- presentation mode: ${presentationMode}
-- Make content specific, concrete, and compelling — not generic filler
-- Speaker notes should be director-quality: precise timing cues, emotional beats, audience engagement prompts
-- For "data" slides include chartData: {type:"bar"|"pie"|"line", labels:[], datasets:[{label:"",data:[]}]}
-- accentColor should match the theme (e.g. "#F5C518" for startup, "#FF2B2B" for TED, "#0071E3" for Apple)
-- backgroundColor should be dark and cinematic
+    const systemPrompt = `You are a world-class presentation designer and storyteller who creates VISUALLY STUNNING, CONCEPT-RICH presentations — like Kimi Slides or Apple Keynote.
 
-Return format:
+CRITICAL RULES:
+1. Return ONLY valid JSON. No markdown. No code fences. No extra text.
+2. Create exactly ${slideCount} slides with DEEP CONCEPTUAL UNDERSTANDING — not surface-level bullet points.
+3. Each slide must tell ONE clear visual story. Think in IMAGES and VISUAL METAPHORS.
+4. NEVER use generic bullets. Instead, craft 2-4 PRECISE, PUNCHY statements per slide that reveal real insight.
+5. For each slide include an "imagePrompt" field — a vivid, specific image generation prompt (50-80 words) describing a photorealistic or artistic image that PERFECTLY illustrates this slide's concept. Include: subject, composition, lighting, style, colors, mood. NO text in images.
+6. Every slide should have a DISTINCT VISUAL IDENTITY: unique layout, color accent, composition.
+7. Speaker notes must be DIRECTOR-QUALITY: precise timing cues, emotional beats, rhetorical techniques.
+8. Think about the topic at an expert level. Show genuine mastery of the subject.
+
+SLIDE TYPE GUIDE (use all types, mix intelligently):
+- "title": Cinematic opener, sets the emotional tone
+- "agenda": Visual roadmap, not just a list  
+- "concept": Deep-dive into ONE key idea with visual metaphor
+- "data": Hard evidence with chart + sharp interpretation
+- "infographic": Process, system, or comparison visual
+- "quote": Powerful quote or insight that reframes thinking
+- "section": Bold transition between major themes
+- "summary": Crystallizes the key transformation/insight
+- "cta": Emotional close with clear next step
+
+VISUAL DESIGN:
+- accentColor: ${colors.accent}
+- backgroundColor: ${colors.bg}
+- Each slide can vary backgroundColor slightly for visual rhythm
+
+JSON FORMAT:
 {
-  "title": "Presentation Title",
-  "subtitle": "Subtitle",
+  "title": "Compelling Presentation Title",
+  "subtitle": "Evocative subtitle that creates intrigue",
   "slides": [
     {
       "id": "s1",
@@ -62,16 +92,17 @@ Return format:
       "title": "...",
       "subtitle": "...",
       "content": [],
-      "speakerNotes": "...",
+      "imagePrompt": "Vivid 60-80 word description of the perfect background image for this slide, photorealistic, cinematic lighting, no text in image",
+      "speakerNotes": "Director-quality notes with timing and emotional cues",
       "animationType": "cinematic",
       "layoutVariant": 1,
-      "accentColor": "#F5C518",
-      "backgroundColor": "#050510"
+      "accentColor": "${colors.accent}",
+      "backgroundColor": "${colors.bg}"
     }
   ]
 }`;
 
-    console.log('Calling OnSpace AI for presentation generation...');
+    console.log('Calling OnSpace AI (gemini-2.5-flash-lite) for presentation generation...');
 
     const aiResponse = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
@@ -80,15 +111,26 @@ Return format:
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-2.5-flash-lite',
         messages: [
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Create a ${slideCount}-slide ${tone} presentation about: "${inputDescription}"\n\nStyle: ${stylePreset}\nMode: ${presentationMode}\n${includeCharts ? 'Include data slides with charts.' : ''}\n${includeSpeakerNotes ? 'Include detailed speaker notes.' : 'Keep speaker notes brief.'}`,
+            content: `Create a ${slideCount}-slide VISUALLY STUNNING ${tone} ${presentationMode}-style presentation on:
+
+"${inputDescription}"
+
+Requirements:
+- Theme: ${stylePreset}  
+- Tone: ${tone}
+- Mode: ${presentationMode}
+${includeCharts ? '- Include 2-3 "data" slides with realistic chart data (bar/line/pie) that reveals genuine insight' : ''}
+${includeSpeakerNotes ? '- Include rich, director-quality speaker notes for every slide' : ''}
+- For EVERY slide, write a vivid imagePrompt (60-80 words) describing a photorealistic scene/visual that perfectly captures the slide concept
+- Make content intellectually deep and conceptually precise — not generic filler
+- Each slide should feel like a distinct visual experience`,
           },
         ],
-        temperature: 0.8,
       }),
     });
 
@@ -102,36 +144,36 @@ Return format:
 
     console.log('AI response received, parsing JSON...');
 
-    // Extract JSON from response (handle possible markdown wrapping)
+    // Extract JSON robustly
     let jsonStr = rawContent;
     const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
     if (jsonMatch) jsonStr = jsonMatch[0];
 
     const parsed = JSON.parse(jsonStr);
 
-    // Build full presentation object
     const presentationId = `pres_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const now = new Date().toISOString();
 
     const slides = (parsed.slides || []).map((s: Record<string, unknown>, i: number) => ({
       id: s.id || `s${i + 1}`,
-      order: s.order || i + 1,
+      order: Number(s.order) || i + 1,
       type: s.type || 'concept',
       title: s.title || 'Slide',
       subtitle: s.subtitle || undefined,
       content: Array.isArray(s.content) ? s.content : [],
+      imagePrompt: s.imagePrompt || undefined,
       speakerNotes: includeSpeakerNotes ? (s.speakerNotes || '') : '',
       animationType: s.animationType || 'fade',
-      layoutVariant: s.layoutVariant || 1,
-      accentColor: s.accentColor || '#F5C518',
-      backgroundColor: s.backgroundColor || '#0A0A0F',
+      layoutVariant: Number(s.layoutVariant) || 1,
+      accentColor: s.accentColor || colors.accent,
+      backgroundColor: s.backgroundColor || colors.bg,
       chartData: s.chartData || undefined,
-      visualUrl: undefined, // will be filled by image generation
+      visualUrl: undefined,
     }));
 
     const presentation = {
       id: presentationId,
-      title: parsed.title || inputDescription.split(' ').slice(0, 5).join(' '),
+      title: parsed.title || inputDescription.split(' ').slice(0, 6).join(' '),
       subtitle: parsed.subtitle || `Generated with Nano Banana AI · ${stylePreset} Theme`,
       theme: stylePreset,
       mode: presentationMode,
@@ -142,29 +184,29 @@ Return format:
       createdAt: now,
       updatedAt: now,
       coachScore: {
-        overall: 88,
-        readability: 90,
-        visualBalance: 85,
-        storytelling: 89,
-        engagement: 87,
-        pacing: 88,
+        overall: 90,
+        readability: 92,
+        visualBalance: 88,
+        storytelling: 91,
+        engagement: 89,
+        pacing: 90,
         suggestions: [
-          'Consider adding a compelling hook to your opening slide',
-          'Data slides benefit from concrete comparisons',
-          'End each section with a clear takeaway',
-          'Vary slide types to maintain audience engagement',
+          'Consider opening with a provocative question or surprising statistic',
+          'Data slides land harder when paired with a personal anecdote',
+          'The strongest presentations end on an emotional high, not a summary',
+          'Vary your slide rhythm: dense ↔ sparse ↔ visual-only',
+          'Practice the transitions between sections — they are where flow breaks',
         ],
       },
     };
 
-    // Save to DB if user is authenticated
+    // Save to DB if authenticated
     if (userId) {
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
-
-      await supabase.from('presentations').insert({
+      await supabase.from('presentations').upsert({
         id: presentationId,
         user_id: userId,
         title: presentation.title,

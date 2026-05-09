@@ -70,6 +70,7 @@ export interface Slide {
   subtitle?: string;
   content: string[];
   visualUrl?: string;
+  imagePrompt?: string;
   speakerNotes: string;
   animationType: AnimationType;
   layoutVariant: number;

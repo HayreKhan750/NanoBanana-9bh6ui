@@ -7,20 +7,18 @@ interface GenerationState {
   isGenerating: boolean;
   progress: number;
   stage: string;
+  imageProgress: { current: number; total: number } | null;
   presentation: Presentation | null;
   error: string | null;
 }
 
-const GENERATION_STAGES = [
+const TEXT_STAGES = [
   { progress: 8,  label: "🧠 Initializing Gemini AI..." },
-  { progress: 18, label: "📖 Analyzing your input..." },
-  { progress: 30, label: "🔑 Extracting key concepts..." },
-  { progress: 45, label: "🏗️ Building slide structure..." },
-  { progress: 58, label: "✍️ Generating storytelling flow..." },
-  { progress: 70, label: "🎨 Crafting visual layouts..." },
-  { progress: 80, label: "🌅 Generating AI slide images..." },
-  { progress: 90, label: "📝 Composing speaker notes..." },
-  { progress: 96, label: "✨ Finalizing your presentation..." },
+  { progress: 18, label: "📖 Analyzing your topic..." },
+  { progress: 30, label: "🔑 Extracting core concepts..." },
+  { progress: 45, label: "🏗️ Architecting slide structure..." },
+  { progress: 58, label: "✍️ Crafting storytelling flow..." },
+  { progress: 68, label: "📊 Building visual layouts..." },
 ];
 
 export function usePresentationGeneration() {
@@ -28,53 +26,68 @@ export function usePresentationGeneration() {
     isGenerating: false,
     progress: 0,
     stage: "",
+    imageProgress: null,
     presentation: null,
     error: null,
   });
 
   const generate = useCallback(async (config: GenerationConfig, userId?: string) => {
-    setState({ isGenerating: true, progress: 0, stage: "🚀 Launching Nano Banana AI...", presentation: null, error: null });
+    setState({ isGenerating: true, progress: 0, stage: "🚀 Launching Nano Banana AI...", imageProgress: null, presentation: null, error: null });
 
     let stageIndex = 0;
     const interval = setInterval(() => {
-      if (stageIndex < GENERATION_STAGES.length) {
-        const s = GENERATION_STAGES[stageIndex];
+      if (stageIndex < TEXT_STAGES.length) {
+        const s = TEXT_STAGES[stageIndex];
         setState((prev) => ({ ...prev, progress: s.progress, stage: s.label }));
         stageIndex++;
       }
-    }, 500);
+    }, 600);
 
     try {
-      // Step 1: Generate presentation structure with real LLM
+      // Step 1: Generate slide structure with Gemini
       const presentation = await generatePresentationAI(config, userId);
-      
       clearInterval(interval);
-      setState((prev) => ({ ...prev, progress: 75, stage: "🌅 Generating AI visuals with Nano Banana 2..." }));
 
-      // Step 2: Generate images for key slides (title, concept, cta) in parallel
-      const imageSlideIndices = presentation.slides
-        .map((s, i) => ({ s, i }))
-        .filter(({ s }) => ['title', 'concept', 'cta', 'infographic', 'summary'].includes(s.type))
-        .slice(0, 5) // max 5 images per presentation
-        .map(({ i }) => i);
+      // Step 2: Generate AI images for slides (all slides get images via Nano Banana 2)
+      // Prioritize: title, concept, cta, infographic, section, summary first; then rest
+      const priorityTypes = ['title', 'cta', 'concept', 'infographic', 'section', 'summary', 'quote'];
+      const orderedIndices = [
+        ...presentation.slides.map((s, i) => ({ s, i })).filter(({ s }) => priorityTypes.includes(s.type)).map(({ i }) => i),
+        ...presentation.slides.map((s, i) => ({ s, i })).filter(({ s }) => !priorityTypes.includes(s.type)).map(({ i }) => i),
+      ];
 
-      const imageResults = await Promise.allSettled(
-        imageSlideIndices.map((idx) =>
-          generateSlideImageAI(presentation.slides[idx], config.stylePreset, userId)
-        )
-      );
+      // Generate images one by one (to avoid overwhelming the API)
+      const totalImages = Math.min(orderedIndices.length, presentation.slides.length);
+      let doneImages = 0;
 
-      // Apply generated images to slides
-      imageResults.forEach((result, j) => {
-        const idx = imageSlideIndices[j];
-        if (result.status === 'fulfilled' && result.value) {
-          presentation.slides[idx].visualUrl = result.value;
+      setState((prev) => ({
+        ...prev,
+        progress: 72,
+        stage: "🎨 Generating Nano Banana 2 images...",
+        imageProgress: { current: 0, total: totalImages },
+      }));
+
+      for (const idx of orderedIndices) {
+        const slide = presentation.slides[idx] as typeof presentation.slides[0] & { imagePrompt?: string };
+        try {
+          const imageUrl = await generateSlideImageAI(slide, config.stylePreset, userId);
+          presentation.slides[idx].visualUrl = imageUrl;
+        } catch (imgErr) {
+          console.warn(`Image gen failed for slide ${idx + 1}:`, imgErr);
         }
-      });
+        doneImages++;
+        const imgPct = 72 + Math.round((doneImages / totalImages) * 23);
+        setState((prev) => ({
+          ...prev,
+          progress: imgPct,
+          stage: `🎨 Generating image ${doneImages}/${totalImages}...`,
+          imageProgress: { current: doneImages, total: totalImages },
+        }));
+      }
 
       presentation.totalSlides = presentation.slides.length;
 
-      setState((prev) => ({ ...prev, progress: 95, stage: "💾 Saving your presentation..." }));
+      setState((prev) => ({ ...prev, progress: 96, stage: "💾 Saving your presentation...", imageProgress: null }));
 
       // Step 3: Save
       if (userId) {
@@ -83,7 +96,7 @@ export function usePresentationGeneration() {
         saveLocal(presentation);
       }
 
-      setState({ isGenerating: false, progress: 100, stage: "✅ Complete!", presentation, error: null });
+      setState({ isGenerating: false, progress: 100, stage: "✅ Complete!", imageProgress: null, presentation, error: null });
 
       toast.success("Presentation generated!", {
         description: `${presentation.slides.length} slides with AI visuals · ${presentation.estimatedDuration} min`,
@@ -93,15 +106,15 @@ export function usePresentationGeneration() {
     } catch (err) {
       clearInterval(interval);
       const errorMessage = err instanceof Error ? err.message : "Generation failed";
-      console.error('Generation error:', err);
-      setState((prev) => ({ ...prev, isGenerating: false, error: errorMessage }));
+      console.error("Generation error:", err);
+      setState((prev) => ({ ...prev, isGenerating: false, error: errorMessage, imageProgress: null }));
       toast.error("Generation failed", { description: errorMessage });
       return null;
     }
   }, []);
 
   const reset = useCallback(() => {
-    setState({ isGenerating: false, progress: 0, stage: "", presentation: null, error: null });
+    setState({ isGenerating: false, progress: 0, stage: "", imageProgress: null, presentation: null, error: null });
   }, []);
 
   return { ...state, generate, reset };
