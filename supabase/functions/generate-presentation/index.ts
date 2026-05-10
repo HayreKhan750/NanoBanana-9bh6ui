@@ -7,8 +7,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('ONSPACE_AI_API_KEY');
-    const baseUrl = Deno.env.get('ONSPACE_AI_BASE_URL');
+    // Use Vercel AI Gateway (supports multiple providers via model string)
+    const aiGatewayKey = Deno.env.get('AI_GATEWAY_API_KEY');
+    const aiGatewayUrl = 'https://api.vercel.ai/v1'; // Default Vercel AI Gateway endpoint
 
     const body = await req.json();
     const { config, userId } = body;
@@ -102,16 +103,20 @@ JSON FORMAT:
   ]
 }`;
 
-    console.log('Calling OnSpace AI (gemini-2.5-flash-lite) for presentation generation...');
+    console.log('Calling Vercel AI Gateway (groq/mixtral-8x7b-32768) for presentation generation...');
 
-    const aiResponse = await fetch(`${baseUrl}/chat/completions`, {
+    // Use Groq (fastest, free tier with reasonable limits)
+    // Fallback models: 'openai/gpt-4o-mini', 'google/gemini-pro', 'anthropic/claude-3-haiku'
+    const model = 'groq/mixtral-8x7b-32768';
+
+    const aiResponse = await fetch(`${aiGatewayUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${aiGatewayKey || ''}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-lite',
+        model,
         messages: [
           { role: 'system', content: systemPrompt },
           {
@@ -131,12 +136,14 @@ ${includeSpeakerNotes ? '- Include rich, director-quality speaker notes for ever
 - Each slide should feel like a distinct visual experience`,
           },
         ],
+        temperature: 0.7,
+        max_tokens: 4000,
       }),
     });
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      throw new Error(`OnSpace AI error: ${errText}`);
+      throw new Error(`Vercel AI Gateway error (${aiResponse.status}): ${errText}`);
     }
 
     const aiData = await aiResponse.json();

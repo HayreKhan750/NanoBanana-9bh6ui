@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import {
   MessageSquare, FileText, Youtube, Globe, Mic, BookOpen,
   ChevronRight, ChevronLeft, Upload, Sparkles, Loader2,
-  FileCode, AlignLeft
+  FileCode, AlignLeft, AlertCircle, Clock, ZapOff, CheckCircle2
 } from "lucide-react";
 import type { InputType, StylePreset, PresentationMode, GenerationConfig } from "@/types/presentation";
 import { INPUT_TYPES, PRESENTATION_MODES, STYLE_PRESETS } from "@/constants/presets";
 import { usePresentationGeneration } from "@/hooks/usePresentationGeneration";
 import { useAuth } from "@/hooks/useAuth";
+import { useUsageTracking } from "@/hooks/useUsageTracking";
+import { UsageDashboard } from "@/components/UsageDashboard";
 
 const INPUT_ICONS: Record<string, React.ElementType> = {
   prompt: MessageSquare, topic: AlignLeft, pdf: FileText, docx: FileCode,
@@ -21,6 +23,8 @@ type Step = 1 | 2 | 3;
 export default function GeneratePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { canMakeRequest, quotaWarning, remainingToday } = useUsageTracking(user?.id);
+  const [queueStatus, setQueueStatus] = useState<{ position: number; status: string; eta?: number } | null>(null);
   const [step, setStep] = useState<Step>(1);
   const [selectedInput, setSelectedInput] = useState<InputType>("prompt");
   const [selectedPreset, setSelectedPreset] = useState<StylePreset>("startup");
@@ -40,6 +44,12 @@ export default function GeneratePage() {
   const needsPrompt = ["prompt", "topic"].includes(selectedInput);
 
   async function handleGenerate() {
+    // Check quota before generating
+    if (!canMakeRequest) {
+      console.log('[v0] User over quota:', quotaWarning);
+      return;
+    }
+
     const config: GenerationConfig = {
       inputType: selectedInput,
       prompt: prompt || url,
@@ -55,8 +65,13 @@ export default function GeneratePage() {
       language: "en",
     };
 
-    const pres = await generate(config, user?.id);
-    if (pres) navigate(`/studio/${pres.id}`);
+    const pres = await generate(config, user?.id, (status) => {
+      setQueueStatus(status);
+    });
+    if (pres) {
+      setQueueStatus(null);
+      navigate(`/studio/${pres.id}`);
+    }
   }
 
   const isStep1Valid = needsPrompt ? prompt.trim().length > 3 : needsUrl ? url.trim().length > 5 : needsFile ? !!fileName : true;
@@ -71,7 +86,28 @@ export default function GeneratePage() {
               🍌
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Nano Banana AI is working</h3>
-            <p className="text-sm mb-8" style={{ color: "#F5C518" }}>{stage}</p>
+            <p className="text-sm mb-2" style={{ color: "#F5C518" }}>{stage}</p>
+
+            {/* Queue Status */}
+            {queueStatus && (
+              <div className="mb-4 p-3 rounded-lg" style={{ background: "rgba(59, 130, 246, 0.1)", border: "1px solid rgba(59, 130, 246, 0.2)" }}>
+                {queueStatus.status === 'cached' && (
+                  <p className="text-xs text-blue-300 font-medium flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Using cached version
+                  </p>
+                )}
+                {queueStatus.status === 'pending' && (
+                  <div>
+                    <p className="text-xs text-blue-300 font-medium">Position in queue</p>
+                    <p className="text-sm text-blue-200 font-bold">{queueStatus.position + 1}</p>
+                  </div>
+                )}
+                {queueStatus.status === 'processing' && (
+                  <p className="text-xs text-blue-300 font-medium">Processing your request...</p>
+                )}
+              </div>
+            )}
 
             <div className="mb-6">
               <div className="flex items-center justify-between text-xs mb-2">
@@ -85,7 +121,7 @@ export default function GeneratePage() {
 
             <div className="space-y-2 text-left">
               {[
-                { label: "Real AI generation (Gemini 3 Flash)", done: progress > 30 },
+                { label: "Real AI generation (Groq/Mixtral)", done: progress > 30 },
                 { label: "Nano Banana 2 image generation", done: progress > 75 },
                 { label: "Cloud saving & finalizing", done: progress > 95 },
               ].map((s) => (
@@ -111,6 +147,24 @@ export default function GeneratePage() {
       )}
 
       <div className="max-w-3xl mx-auto px-6 py-10">
+        {/* Usage Dashboard */}
+        {user && (
+          <div className="mb-8">
+            <UsageDashboard userId={user.id} compact={true} />
+          </div>
+        )}
+
+        {/* Quota Warning */}
+        {!canMakeRequest && (
+          <div className="mb-8 p-4 rounded-xl flex items-start gap-3" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)" }}>
+            <ZapOff className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-300">Daily quota exceeded</p>
+              <p className="text-xs text-red-200/80 mt-0.5">{quotaWarning}</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-10">
           <div className="flex items-center gap-2 text-xs text-white/40 mb-4">
@@ -118,7 +172,7 @@ export default function GeneratePage() {
           </div>
           <h1 className="text-4xl font-black text-white mb-2">What's your story?</h1>
           <p className="text-white/50">
-            Powered by Gemini 3 Flash + Nano Banana 2 Image AI
+            Powered by Groq/Mixtral AI + Nano Banana 2 Image Generation
             {user ? (
               <span className="ml-2 text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.1)", color: "#10B981", border: "1px solid rgba(16,185,129,0.2)" }}>
                 ✓ Saving to cloud
@@ -365,7 +419,10 @@ export default function GeneratePage() {
               {/* AI badge */}
               <div className="flex flex-wrap gap-2 mb-5">
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "rgba(245,197,24,0.1)", color: "#F5C518", border: "1px solid rgba(245,197,24,0.2)" }}>
-                  🧠 Gemini 3 Flash AI
+                  🧠 Groq/Mixtral AI
+                </span>
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "rgba(59,130,246,0.1)", color: "#3B82F6", border: "1px solid rgba(59,130,246,0.2)" }}>
+                  ⚡ Request Queue & Cache
                 </span>
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.2)" }}>
                   🌅 Nano Banana 2 Images
