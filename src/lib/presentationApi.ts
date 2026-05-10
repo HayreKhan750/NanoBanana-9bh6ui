@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { GenerationConfig, Presentation, Slide } from '@/types/presentation';
 import { FunctionsHttpError } from '@supabase/supabase-js';
-import { aiQueue } from '@/lib/aiQueue';
+import { aiQueue, AIQueue } from '@/lib/aiQueue';
 import { aiCache } from '@/lib/aiCache';
 import { usageTracker, type UsageLog } from '@/lib/usageTracker';
 
@@ -16,7 +16,7 @@ export async function generatePresentationAI(
   const startTime = Date.now();
 
   // Generate hash for deduplication
-  const promptHash = aiQueue.constructor.hashPrompt(
+  const promptHash = AIQueue.hashPrompt(
     config.prompt || config.youtubeUrl || config.websiteUrl || '',
     { mode: config.presentationMode, preset: config.stylePreset }
   );

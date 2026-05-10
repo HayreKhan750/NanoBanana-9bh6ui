@@ -16,7 +16,7 @@ export interface QueuedRequest {
   error?: string;
 }
 
-class AIQueue {
+export class AIQueue {
   private queue: Map<string, QueuedRequest> = new Map();
   private processing: Set<string> = new Set();
   private requestTimestamps: number[] = [];
