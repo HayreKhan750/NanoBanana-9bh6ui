@@ -8,6 +8,11 @@ export default defineConfig({
     host: "::",
     port: 3000,
     strictPort: true,
+    allowedHosts: [
+      "sb-4pi4a6iznsg9.vercel.run",
+      ".vercel.run",
+      "localhost",
+    ],
   },
   plugins: [
     react(),
