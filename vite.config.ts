@@ -6,7 +6,13 @@ import path from "path";
 export default defineConfig({
   server: {
     host: "::",
-    port: 8080,
+    port: 3000,
+    strictPort: true,
+    allowedHosts: [
+      "sb-4pi4a6iznsg9.vercel.run",
+      ".vercel.run",
+      "localhost",
+    ],
   },
   plugins: [
     react(),

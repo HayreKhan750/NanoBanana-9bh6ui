@@ -31,7 +31,11 @@ export function usePresentationGeneration() {
     error: null,
   });
 
-  const generate = useCallback(async (config: GenerationConfig, userId?: string) => {
+  const generate = useCallback(async (
+    config: GenerationConfig,
+    userId?: string,
+    onStatusChange?: (status: { position: number; status: string; eta?: number }) => void
+  ) => {
     setState({ isGenerating: true, progress: 0, stage: "🚀 Launching Nano Banana AI...", imageProgress: null, presentation: null, error: null });
 
     let stageIndex = 0;
@@ -44,8 +48,8 @@ export function usePresentationGeneration() {
     }, 600);
 
     try {
-      // Step 1: Generate slide structure with Gemini
-      const presentation = await generatePresentationAI(config, userId);
+      // Step 1: Generate slide structure with Groq/Mixtral (via queue & cache)
+      const presentation = await generatePresentationAI(config, userId, onStatusChange);
       clearInterval(interval);
 
       // Step 2: Generate AI images for slides (all slides get images via Nano Banana 2)
