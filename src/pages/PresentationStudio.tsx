@@ -189,18 +189,18 @@ export default function PresentationStudio() {
         </div>
 
         {/* Main Canvas Area */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-auto bg-[#0a0a0f]">
-          <div className="flex-1 flex items-center justify-center p-6">
+        <div className="flex-1 flex flex-col overflow-auto min-w-0">
+          <div className="flex-1 flex items-center justify-center p-4 md:p-8">
             {activeSlide ? (
-              <div className="w-full max-w-4xl mx-auto">
-                <div 
-                  className="slide-canvas w-full rounded-xl overflow-hidden shadow-2xl border border-white/10" 
-                  style={{ 
-                    aspectRatio: "16/9",
-                    transform: `scale(${zoom})`,
-                    transformOrigin: "top center"
-                  }}
-                >
+              <div 
+                className="w-full"
+                style={{ 
+                  maxWidth: `${Math.min(900 * zoom, 1200)}px`,
+                  transform: `scale(${zoom})`, 
+                  transformOrigin: "center center" 
+                }}
+              >
+                <div className="slide-canvas w-full rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: "16/9" }}>
                   <SlideCanvas
                     slide={activeSlide}
                     isEditing
@@ -210,14 +210,7 @@ export default function PresentationStudio() {
                 </div>
 
                 {showNotes && (
-                  <div 
-                    className="mt-4 p-4 rounded-xl" 
-                    style={{ 
-                      background: "rgba(255,255,255,0.03)", 
-                      border: "1px solid rgba(255,255,255,0.07)",
-                      marginTop: `${16 + (zoom - 1) * 400}px`
-                    }}
-                  >
+                  <div className="mt-4 p-4 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
                     <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Speaker Notes</p>
                     <textarea
                       defaultValue={activeSlide.speakerNotes}
