@@ -79,19 +79,59 @@ export async function generatePresentationAI(
         if (youtubeUrl) inputDescription = `YouTube video: ${youtubeUrl}`;
         if (websiteUrl) inputDescription = `Website: ${websiteUrl}`;
 
-        const systemPrompt = `You are an expert presentation designer. Create compelling, visually structured presentation content.
+        const systemPrompt = `You are an elite presentation designer creating Kimi/Gamma-quality visual decks.
 
-CRITICAL: Output ONLY valid JSON with this structure:
+DESIGN PRINCIPLES:
+1. VISUAL-FIRST: Use process flows, icon grids, comparisons - NOT bullet lists
+2. ONE IDEA PER SLIDE: Each slide should have ONE clear visual concept
+3. STORYTELLING: Hook → Problem → Solution → Evidence → CTA narrative arc
+4. VARIED LAYOUTS: Mix slide types for visual variety
+
+SLIDE TYPES (use these exact values):
+- "title": Opening slide with main title
+- "agenda": Overview with numbered items (4-6 items max)
+- "timeline": Process flow with sequential steps (3-5 steps, each with title:description format)
+- "comparison": Before/After or Problem/Solution (split content evenly)
+- "infographic": Visual process or how-it-works (3-5 steps)
+- "data": Charts and key insights
+- "section": Bold divider between sections
+- "concept": Key ideas with icons (4-6 items work best)
+- "quote": Impactful quote
+- "cta": Call to action ending
+
+CONTENT FORMAT:
+- For timeline/infographic: Use "Step Title: Description" format
+- For comparison: First half = problems, second half = solutions
+- For concept: Each item should be a complete thought (15-25 words)
+- Keep content items to 4-6 per slide for visual balance
+
+OUTPUT (valid JSON only):
 {
-  "title": "string",
-  "totalSlides": number,
-  "slides": [{"slideNumber": number, "title": "string", "content": ["string"], "imagePrompt": "string"}]
+  "title": "Compelling Title",
+  "subtitle": "Optional tagline",
+  "slides": [{
+    "type": "title|agenda|timeline|comparison|infographic|data|section|concept|quote|cta",
+    "title": "Slide Headline",
+    "subtitle": "Optional",
+    "content": ["Item 1", "Item 2"],
+    "speakerNotes": "What to say"
+  }]
 }`;
 
-        const userPrompt = `Create a ${slideCount}-slide ${tone} ${presentationMode} presentation on "${inputDescription}"
-Theme: ${stylePreset}
-${includeCharts ? '- Include data visualization slides' : ''}
-${includeSpeakerNotes ? '- Add speaker notes' : ''}
+        const userPrompt = `Create a ${slideCount}-slide ${tone} presentation: "${inputDescription}"
+
+REQUIREMENTS:
+- Slide 1: title slide
+- Slide 2: agenda with 4-5 key topics
+- Middle slides: Mix of timeline, comparison, infographic, concept slides
+- Use "timeline" type for any process or steps
+- Use "comparison" for before/after or problem/solution
+- Use "infographic" for how-things-work explanations  
+- Final slide: cta slide
+${includeCharts ? '- Include 1-2 data slides with chartData: {type: "bar"|"pie", labels: [...], datasets: [{label: "...", data: [...]}]}' : ''}
+${includeSpeakerNotes ? '- Add detailed speakerNotes for each slide' : ''}
+
+Make it visually impressive like a $10,000 professional presentation.
 Return ONLY valid JSON.`;
 
         console.log('[v0] Calling Groq API directly...');
