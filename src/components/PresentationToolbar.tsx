@@ -31,18 +31,22 @@ export default function PresentationToolbar({
 
   return (
     <div
-      className="flex items-center justify-between px-4 py-2.5 gap-4"
+      className="flex items-center px-4 py-2.5 gap-4 flex-wrap"
       style={{
-        background: "rgba(10,10,15,0.9)",
+        background: "rgba(10,10,15,0.95)",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         backdropFilter: "blur(20px)",
       }}
     >
       {/* Presentation info */}
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-white truncate max-w-[200px]">{presentation.title}</div>
-          <div className="text-[10px] text-white/40">{presentation.slides.length} slides · {presentation.estimatedDuration} min</div>
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-white truncate">{presentation.title || "Untitled"}</div>
+          <div className="flex items-center gap-2 text-[10px] text-white/40">
+            <span>{presentation.slides?.length || 0} slides</span>
+            <span>·</span>
+            <span>{presentation.estimatedDuration || Math.ceil((presentation.slides?.length || 0) * 1.5)} min</span>
+          </div>
         </div>
         {preset && (
           <div
@@ -50,7 +54,7 @@ export default function PresentationToolbar({
             style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}
           >
             <span>{preset.emoji}</span>
-            <span>{preset.name}</span>
+            <span className="hidden sm:inline">{preset.name}</span>
           </div>
         )}
       </div>

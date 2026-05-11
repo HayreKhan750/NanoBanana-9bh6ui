@@ -132,7 +132,7 @@ export default function PresentationSidebar({
 
       {/* Footer info */}
       <div className="px-4 py-3 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-        <p className="text-[10px] text-white/30">~{presentation.estimatedDuration} min presentation</p>
+        <p className="text-[10px] text-white/30">~{presentation.estimatedDuration || Math.ceil((presentation.slides?.length || 0) * 1.5)} min presentation</p>
       </div>
     </div>
   );
