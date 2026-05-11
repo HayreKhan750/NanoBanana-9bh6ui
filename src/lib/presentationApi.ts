@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { GenerationConfig, Presentation, Slide } from '@/types/presentation';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { aiQueue, AIQueue } from '@/lib/aiQueue';
@@ -213,6 +213,9 @@ export async function generateSlideImageAI(
   theme: string,
   userId?: string
 ): Promise<string> {
+  if (!supabase) {
+    throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
   const { data, error } = await supabase.functions.invoke('generate-slide-image', {
     body: {
       imagePrompt: slide.imagePrompt || undefined,
@@ -244,6 +247,9 @@ export async function generateSlideImageAI(
 // Cloud persistence (Supabase DB)
 // ────────────────────────────────────────────────
 export async function saveToCloud(presentation: Presentation, userId: string): Promise<void> {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
   const { error } = await supabase.from('presentations').upsert({
     id: presentation.id,
     user_id: userId,
@@ -262,6 +268,9 @@ export async function saveToCloud(presentation: Presentation, userId: string): P
 }
 
 export async function loadFromCloud(userId: string): Promise<Presentation[]> {
+  if (!supabase) {
+    return [];
+  }
   const { data, error } = await supabase
     .from('presentations')
     .select('*')
@@ -287,6 +296,9 @@ export async function loadFromCloud(userId: string): Promise<Presentation[]> {
 }
 
 export async function deleteFromCloud(id: string): Promise<void> {
+  if (!supabase) {
+    return;
+  }
   const { error } = await supabase.from('presentations').delete().eq('id', id);
   if (error) throw error;
 }

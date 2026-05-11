@@ -18,6 +18,9 @@ export function mapSupabaseUser(user: User): AuthUser {
 }
 
 export async function sendOtp(email: string) {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: { shouldCreateUser: true },
@@ -26,6 +29,9 @@ export async function sendOtp(email: string) {
 }
 
 export async function verifyOtpAndSetPassword(email: string, token: string, password: string): Promise<User> {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
   const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
   if (error) throw error;
 
@@ -39,12 +45,18 @@ export async function verifyOtpAndSetPassword(email: string, token: string, pass
 }
 
 export async function signInWithPassword(email: string, password: string): Promise<User> {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data.user;
 }
 
 export async function signOut() {
+  if (!supabase) {
+    return;
+  }
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
