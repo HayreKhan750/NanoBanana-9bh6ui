@@ -48,10 +48,6 @@
 
   <body>
     <div id="root"></div>
-    <script>
-      // Inject API key from environment for frontend use
-      window.__GROQ_API_KEY__ = import.meta.env.VITE_GROQ_API_KEY || '';
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

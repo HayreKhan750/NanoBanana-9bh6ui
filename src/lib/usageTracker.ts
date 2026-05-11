@@ -67,8 +67,8 @@ class UsageTracker {
     }
     localStorage.setItem(this.LOCAL_KEY, JSON.stringify(this.localLogs));
 
-    // Save to cloud if authenticated
-    if (userId) {
+    // Save to cloud if authenticated and Supabase is configured
+    if (userId && supabase) {
       try {
         await supabase.from('usage_logs').insert({
           user_id: userId,

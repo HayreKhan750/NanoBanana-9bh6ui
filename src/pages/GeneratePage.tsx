@@ -440,7 +440,7 @@ export default function GeneratePage() {
                   { label: "Style", value: `${STYLE_PRESETS.find((p) => p.id === selectedPreset)?.emoji} ${STYLE_PRESETS.find((p) => p.id === selectedPreset)?.name}` },
                   { label: "Mode", value: PRESENTATION_MODES.find((m) => m.id === selectedMode)?.label },
                   { label: "Slides", value: `${slideCount} slides · ~${Math.ceil(slideCount * 1.5)} min` },
-                  { label: "Tone", value: tone.charAt(0).toUpperCase() + tone.slice(1) },
+                  { label: "Tone", value: tone ? tone.charAt(0).toUpperCase() + tone.slice(1) : "Professional" },
                   { label: "Extras", value: [includeCharts && "Charts", includeSpeakerNotes && "Speaker Notes"].filter(Boolean).join(", ") || "None" },
                 ].map((item) => (
                   <div key={item.label} className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>

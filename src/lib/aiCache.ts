@@ -5,7 +5,6 @@
  */
 
 import type { Presentation } from '@/types/presentation';
-import { supabase } from '@/lib/supabase';
 
 export interface CacheMetadata {
   key: string;

@@ -30,6 +30,12 @@ export function useAuthState() {
   useEffect(() => {
     let mounted = true;
 
+    // If Supabase is not configured, just set loading to false
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted && session?.user) login(mapSupabaseUser(session.user));
       if (mounted) setLoading(false);
