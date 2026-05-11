@@ -189,38 +189,44 @@ export default function PresentationStudio() {
         </div>
 
         {/* Main Canvas Area */}
-        <div className="flex-1 flex flex-col overflow-auto min-w-0">
-          <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
             {activeSlide ? (
-              <div 
-                className="w-full"
-                style={{ 
-                  maxWidth: `${Math.min(900 * zoom, 1200)}px`,
-                  transform: `scale(${zoom})`, 
-                  transformOrigin: "center center" 
-                }}
-              >
-                <div className="slide-canvas w-full rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: "16/9" }}>
-                  <SlideCanvas
-                    slide={activeSlide}
-                    isEditing
-                    onTitleChange={(val) => updateSlideText("title", val)}
-                    onSubtitleChange={(val) => updateSlideText("subtitle", val)}
-                  />
-                </div>
-
-                {showNotes && (
-                  <div className="mt-4 p-4 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Speaker Notes</p>
-                    <textarea
-                      defaultValue={activeSlide.speakerNotes}
-                      onChange={(e) => updateSlideNotes(e.target.value)}
-                      className="studio-input w-full px-3 py-2 text-sm resize-none"
-                      rows={3}
-                      placeholder="Add speaker notes..."
+              <div className="flex flex-col items-center w-full h-full">
+                {/* Slide container with proper sizing */}
+                <div 
+                  className="flex-shrink-0"
+                  style={{ 
+                    width: `${70 * zoom}%`,
+                    maxWidth: `${800 * zoom}px`,
+                    minWidth: "300px"
+                  }}
+                >
+                  <div 
+                    className="slide-canvas w-full rounded-xl overflow-hidden shadow-2xl" 
+                    style={{ aspectRatio: "16/9" }}
+                  >
+                    <SlideCanvas
+                      slide={activeSlide}
+                      isEditing
+                      onTitleChange={(val) => updateSlideText("title", val)}
+                      onSubtitleChange={(val) => updateSlideText("subtitle", val)}
                     />
                   </div>
-                )}
+
+                  {showNotes && (
+                    <div className="mt-4 p-4 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                      <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Speaker Notes</p>
+                      <textarea
+                        defaultValue={activeSlide.speakerNotes}
+                        onChange={(e) => updateSlideNotes(e.target.value)}
+                        className="studio-input w-full px-3 py-2 text-sm resize-none"
+                        rows={3}
+                        placeholder="Add speaker notes..."
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="text-center text-white/30"><p>Select a slide to edit</p></div>
