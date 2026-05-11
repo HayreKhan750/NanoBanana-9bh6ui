@@ -22,4 +22,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Expose GROQ_ prefixed env vars in addition to VITE_
+  envPrefix: ["VITE_", "GROQ_"],
 });
