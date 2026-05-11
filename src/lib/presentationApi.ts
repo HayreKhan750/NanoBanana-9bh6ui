@@ -79,59 +79,71 @@ export async function generatePresentationAI(
         if (youtubeUrl) inputDescription = `YouTube video: ${youtubeUrl}`;
         if (websiteUrl) inputDescription = `Website: ${websiteUrl}`;
 
-        const systemPrompt = `You are an elite presentation designer creating Kimi/Gamma-quality visual decks.
+        const systemPrompt = `You are an elite presentation designer creating PREMIUM Kimi/Gamma-quality visual decks with RICH, DETAILED content.
 
-DESIGN PRINCIPLES:
-1. VISUAL-FIRST: Use process flows, icon grids, comparisons - NOT bullet lists
-2. ONE IDEA PER SLIDE: Each slide should have ONE clear visual concept
-3. STORYTELLING: Hook → Problem → Solution → Evidence → CTA narrative arc
-4. VARIED LAYOUTS: Mix slide types for visual variety
+CRITICAL CONTENT RULES:
+1. EVERY content item MUST use "Title: Detailed description sentence" format
+2. Descriptions should be 15-30 words explaining the concept
+3. NEVER write just labels like "Software tools" - always include explanation
+4. Each slide must have 4-6 content items minimum
 
-SLIDE TYPES (use these exact values):
-- "title": Opening slide with main title
-- "agenda": Overview with numbered items (4-6 items max)
-- "timeline": Process flow with sequential steps (3-5 steps, each with title:description format)
-- "comparison": Before/After or Problem/Solution (split content evenly)
-- "infographic": Visual process or how-it-works (3-5 steps)
-- "data": Charts and key insights
-- "section": Bold divider between sections
-- "concept": Key ideas with icons (4-6 items work best)
-- "quote": Impactful quote
-- "cta": Call to action ending
+EXAMPLE GOOD CONTENT:
+- "Material Selection: Purified, asbestos-free talc is carefully sourced to guarantee skin safety and product quality."
+- "Data Integration: Unified dashboards consolidate information from multiple sources, eliminating manual data entry and reducing errors by 80%."
+- "AI Automation: Intelligent agents handle routine tasks 24/7, freeing human workers to focus on creative and strategic initiatives."
 
-CONTENT FORMAT:
-- For timeline/infographic: Use "Step Title: Description" format
-- For comparison: First half = problems, second half = solutions
-- For concept: Each item should be a complete thought (15-25 words)
-- Keep content items to 4-6 per slide for visual balance
+EXAMPLE BAD CONTENT (NEVER do this):
+- "Software tools" (too short, no description)
+- "Copilots" (just a label, useless)
+- "Better efficiency" (vague, no details)
 
-OUTPUT (valid JSON only):
+SLIDE TYPES:
+- "title": Opening with compelling headline + tagline
+- "agenda": 4-6 numbered topics with brief descriptions
+- "timeline": 4-5 sequential steps, each with "Step Name: What happens and why"
+- "infographic": Process explanation with 4-5 detailed steps
+- "comparison": 3 problems on left, 3 solutions on right (6 total items)
+- "concept": 4-6 key ideas, each with title and 20-word explanation
+- "data": Chart data + 3-4 key insight statements
+- "quote": Memorable quote with attribution
+- "cta": Clear call-to-action with supporting points
+
+OUTPUT FORMAT (valid JSON only):
 {
-  "title": "Compelling Title",
-  "subtitle": "Optional tagline",
+  "title": "Compelling Presentation Title",
+  "subtitle": "Engaging tagline or subtitle",
   "slides": [{
-    "type": "title|agenda|timeline|comparison|infographic|data|section|concept|quote|cta",
-    "title": "Slide Headline",
-    "subtitle": "Optional",
-    "content": ["Item 1", "Item 2"],
-    "speakerNotes": "What to say"
+    "type": "title|agenda|timeline|infographic|comparison|concept|data|quote|cta",
+    "title": "Powerful Slide Headline",
+    "subtitle": "Optional supporting context",
+    "content": [
+      "First Point: Detailed explanation of 15-30 words that provides real value and insight.",
+      "Second Point: Another detailed explanation that educates and engages the audience."
+    ],
+    "speakerNotes": "Detailed notes on what to say during this slide"
   }]
 }`;
 
-        const userPrompt = `Create a ${slideCount}-slide ${tone} presentation: "${inputDescription}"
+        const userPrompt = `Create a ${slideCount}-slide ${tone} presentation about: "${inputDescription}"
 
-REQUIREMENTS:
-- Slide 1: title slide
-- Slide 2: agenda with 4-5 key topics
-- Middle slides: Mix of timeline, comparison, infographic, concept slides
-- Use "timeline" type for any process or steps
-- Use "comparison" for before/after or problem/solution
-- Use "infographic" for how-things-work explanations  
-- Final slide: cta slide
-${includeCharts ? '- Include 1-2 data slides with chartData: {type: "bar"|"pie", labels: [...], datasets: [{label: "...", data: [...]}]}' : ''}
-${includeSpeakerNotes ? '- Add detailed speakerNotes for each slide' : ''}
+MANDATORY STRUCTURE:
+1. title slide - Compelling headline with tagline
+2. agenda slide - 4-5 topics with brief descriptions
+3-${slideCount - 1}. Mix of: timeline, infographic, comparison, concept slides
+${slideCount}. cta slide - Strong call to action
 
-Make it visually impressive like a $10,000 professional presentation.
+CRITICAL CONTENT REQUIREMENTS:
+- EVERY content item MUST follow "Title: Description" format
+- Descriptions must be 15-30 words with specific details
+- Each slide needs 4-6 content items
+- Use concrete examples, statistics, or specific benefits
+- NO vague labels like "Better results" - be specific!
+
+${includeCharts ? `DATA SLIDES: Include 1-2 slides with chartData:
+{type: "bar"|"pie"|"line", labels: ["Label1", "Label2"], datasets: [{label: "Metric", data: [45, 65, 80]}]}` : ''}
+${includeSpeakerNotes ? '- Add detailed 2-3 sentence speakerNotes for each slide' : ''}
+
+QUALITY CHECK: Before returning, verify EVERY content item has "Title: Detailed description" format.
 Return ONLY valid JSON.`;
 
         console.log('[v0] Calling Groq API directly...');
