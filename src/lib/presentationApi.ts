@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { GenerationConfig, Presentation, Slide } from '@/types/presentation';
+import type { GenerationConfig, Presentation, Slide, StylePreset, PresentationMode, InputType } from '@/types/presentation';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { aiQueue, AIQueue } from '@/lib/aiQueue';
 import { aiCache } from '@/lib/aiCache';
@@ -79,19 +79,71 @@ export async function generatePresentationAI(
         if (youtubeUrl) inputDescription = `YouTube video: ${youtubeUrl}`;
         if (websiteUrl) inputDescription = `Website: ${websiteUrl}`;
 
-        const systemPrompt = `You are an expert presentation designer. Create compelling, visually structured presentation content.
+        const systemPrompt = `You are an elite presentation designer creating PREMIUM Kimi/Gamma-quality visual decks with RICH, DETAILED content.
 
-CRITICAL: Output ONLY valid JSON with this structure:
+CRITICAL CONTENT RULES:
+1. EVERY content item MUST use "Title: Detailed description sentence" format
+2. Descriptions should be 15-30 words explaining the concept
+3. NEVER write just labels like "Software tools" - always include explanation
+4. Each slide must have 4-6 content items minimum
+
+EXAMPLE GOOD CONTENT:
+- "Material Selection: Purified, asbestos-free talc is carefully sourced to guarantee skin safety and product quality."
+- "Data Integration: Unified dashboards consolidate information from multiple sources, eliminating manual data entry and reducing errors by 80%."
+- "AI Automation: Intelligent agents handle routine tasks 24/7, freeing human workers to focus on creative and strategic initiatives."
+
+EXAMPLE BAD CONTENT (NEVER do this):
+- "Software tools" (too short, no description)
+- "Copilots" (just a label, useless)
+- "Better efficiency" (vague, no details)
+
+SLIDE TYPES:
+- "title": Opening with compelling headline + tagline
+- "agenda": 4-6 numbered topics with brief descriptions
+- "timeline": 4-5 sequential steps, each with "Step Name: What happens and why"
+- "infographic": Process explanation with 4-5 detailed steps
+- "comparison": 3 problems on left, 3 solutions on right (6 total items)
+- "concept": 4-6 key ideas, each with title and 20-word explanation
+- "data": Chart data + 3-4 key insight statements
+- "quote": Memorable quote with attribution
+- "cta": Clear call-to-action with supporting points
+
+OUTPUT FORMAT (valid JSON only):
 {
-  "title": "string",
-  "totalSlides": number,
-  "slides": [{"slideNumber": number, "title": "string", "content": ["string"], "imagePrompt": "string"}]
+  "title": "Compelling Presentation Title",
+  "subtitle": "Engaging tagline or subtitle",
+  "slides": [{
+    "type": "title|agenda|timeline|infographic|comparison|concept|data|quote|cta",
+    "title": "Powerful Slide Headline",
+    "subtitle": "Optional supporting context",
+    "content": [
+      "First Point: Detailed explanation of 15-30 words that provides real value and insight.",
+      "Second Point: Another detailed explanation that educates and engages the audience."
+    ],
+    "speakerNotes": "Detailed notes on what to say during this slide"
+  }]
 }`;
 
-        const userPrompt = `Create a ${slideCount}-slide ${tone} ${presentationMode} presentation on "${inputDescription}"
-Theme: ${stylePreset}
-${includeCharts ? '- Include data visualization slides' : ''}
-${includeSpeakerNotes ? '- Add speaker notes' : ''}
+        const userPrompt = `Create a ${slideCount}-slide ${tone} presentation about: "${inputDescription}"
+
+MANDATORY STRUCTURE:
+1. title slide - Compelling headline with tagline
+2. agenda slide - 4-5 topics with brief descriptions
+3-${slideCount - 1}. Mix of: timeline, infographic, comparison, concept slides
+${slideCount}. cta slide - Strong call to action
+
+CRITICAL CONTENT REQUIREMENTS:
+- EVERY content item MUST follow "Title: Description" format
+- Descriptions must be 15-30 words with specific details
+- Each slide needs 4-6 content items
+- Use concrete examples, statistics, or specific benefits
+- NO vague labels like "Better results" - be specific!
+
+${includeCharts ? `DATA SLIDES: Include 1-2 slides with chartData:
+{type: "bar"|"pie"|"line", labels: ["Label1", "Label2"], datasets: [{label: "Metric", data: [45, 65, 80]}]}` : ''}
+${includeSpeakerNotes ? '- Add detailed 2-3 sentence speakerNotes for each slide' : ''}
+
+QUALITY CHECK: Before returning, verify EVERY content item has "Title: Detailed description" format.
 Return ONLY valid JSON.`;
 
         console.log('[v0] Calling Groq API directly...');
@@ -138,20 +190,33 @@ Return ONLY valid JSON.`;
 
         const parsedContent = JSON.parse(jsonStr);
 
-        // Structure presentation
+        // Structure presentation with full Gamma/Kimi-quality fields
         const presentation: Presentation = {
           id: crypto.randomUUID(),
           title: parsedContent.title || 'Untitled',
+          subtitle: parsedContent.subtitle || '',
+          theme: stylePreset,
+          mode: presentationMode,
           totalSlides: parsedContent.totalSlides || slideCount,
+          estimatedDuration: Math.ceil((parsedContent.totalSlides || slideCount) * 1.5),
+          inputType: config.inputType || 'prompt',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           slides: (parsedContent.slides || []).map((slide: any, idx: number) => ({
-            slideNumber: idx + 1,
+            id: crypto.randomUUID(),
+            order: idx + 1,
+            type: slide.type || (idx === 0 ? 'title' : idx === 1 ? 'agenda' : 'concept'),
             title: slide.title || 'Slide',
+            subtitle: slide.subtitle || '',
             content: Array.isArray(slide.content) ? slide.content : [slide.content || ''],
-            imagePrompt: slide.imagePrompt || 'Professional background',
+            imagePrompt: slide.imagePrompt || `Professional ${stylePreset} style background for ${slide.title || 'presentation'}`,
             speakerNotes: slide.speakerNotes || '',
+            animationType: slide.animationType || 'fade',
+            layoutVariant: slide.layoutVariant || 1,
+            accentColor: '#F5C518',
+            backgroundColor: '#0A0A0F',
+            chartData: slide.chartData || undefined,
           })),
-          created_at: new Date().toISOString(),
-          user_id: userId,
         };
 
         // Cache the result

@@ -31,32 +31,41 @@ export default function PresentationToolbar({
 
   return (
     <div
-      className="flex items-center justify-between px-4 py-2.5 gap-4"
+      className="flex items-center px-3 py-2 gap-2 md:gap-4"
       style={{
-        background: "rgba(10,10,15,0.9)",
+        background: "rgba(10,10,15,0.95)",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         backdropFilter: "blur(20px)",
       }}
     >
-      {/* Presentation info */}
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-white truncate max-w-[200px]">{presentation.title}</div>
-          <div className="text-[10px] text-white/40">{presentation.slides.length} slides · {presentation.estimatedDuration} min</div>
-        </div>
-        {preset && (
-          <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium flex-shrink-0"
-            style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            <span>{preset.emoji}</span>
-            <span>{preset.name}</span>
+      {/* Presentation info - fixed width */}
+      <div className="flex items-center gap-2 min-w-0 w-48 md:w-64 flex-shrink-0">
+        <div className="min-w-0 flex-1">
+          <div className="text-xs md:text-sm font-semibold text-white truncate">{presentation.title || "Untitled"}</div>
+          <div className="flex items-center gap-1 text-[10px] text-white/40">
+            <span>{presentation.slides?.length || 0} slides</span>
+            <span className="hidden sm:inline">·</span>
+            <span className="hidden sm:inline">{presentation.estimatedDuration || Math.ceil((presentation.slides?.length || 0) * 1.5)} min</span>
           </div>
-        )}
+        </div>
       </div>
 
+      {/* Theme preset badge */}
+      {preset && (
+        <div
+          className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium flex-shrink-0"
+          style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <span>{preset.emoji}</span>
+          <span>{preset.name}</span>
+        </div>
+      )}
+
+      {/* Spacer to push controls right */}
+      <div className="flex-1" />
+
       {/* Zoom controls */}
-      <div className="flex items-center gap-1">
+      <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
         <button
           onClick={onZoomOut}
           className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/10"
@@ -75,13 +84,13 @@ export default function PresentationToolbar({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-5" style={{ background: "rgba(255,255,255,0.1)" }} />
+      <div className="hidden sm:block w-px h-5 flex-shrink-0" style={{ background: "rgba(255,255,255,0.1)" }} />
 
       {/* Toggle buttons */}
-      <div className="flex items-center gap-1">
+      <div className="hidden md:flex items-center gap-1 flex-shrink-0">
         <button
           onClick={onToggleNotes}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all"
           style={{
             background: showNotes ? "rgba(6,182,212,0.15)" : "rgba(255,255,255,0.05)",
             color: showNotes ? "#06B6D4" : "rgba(255,255,255,0.5)",
@@ -89,12 +98,12 @@ export default function PresentationToolbar({
           }}
         >
           {showNotes ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-          Notes
+          <span className="hidden lg:inline">Notes</span>
         </button>
 
         <button
           onClick={onToggleCoach}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all"
           style={{
             background: showCoach ? "rgba(245,197,24,0.15)" : "rgba(255,255,255,0.05)",
             color: showCoach ? "#F5C518" : "rgba(255,255,255,0.5)",
@@ -102,15 +111,15 @@ export default function PresentationToolbar({
           }}
         >
           <BarChart2 className="w-3.5 h-3.5" />
-          Coach
+          <span className="hidden lg:inline">Coach</span>
         </button>
       </div>
 
       {/* Divider */}
-      <div className="w-px h-5" style={{ background: "rgba(255,255,255,0.1)" }} />
+      <div className="hidden md:block w-px h-5 flex-shrink-0" style={{ background: "rgba(255,255,255,0.1)" }} />
 
       {/* Action buttons */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={onExport}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"

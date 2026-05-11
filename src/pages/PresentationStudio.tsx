@@ -10,7 +10,7 @@ import SlideCanvas from "@/components/SlideCanvas";
 import AIRefinementPanel from "@/components/AIRefinementPanel";
 import PresentationToolbar from "@/components/PresentationToolbar";
 import ExportDialog from "@/components/ExportDialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 
 function getDemoPresentation(): Presentation {
   return {
@@ -55,6 +55,8 @@ export default function PresentationStudio() {
   const [zoom, setZoom] = useState(1);
   const [showPresent, setShowPresent] = useState(false);
   const [presentSlide, setPresentSlide] = useState(0);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
 
   const {
     presentation, setPresentation,
@@ -160,21 +162,45 @@ export default function PresentationStudio() {
         onPresent={() => { setPresentSlide(activeSlideIndex); setShowPresent(true); }}
       />
 
-      <div className="flex flex-1 overflow-hidden">
-        <PresentationSidebar
-          presentation={presentation}
-          activeSlideIndex={activeSlideIndex}
-          onSelectSlide={setActiveSlideIndex}
-          onDuplicateSlide={duplicateSlide}
-          onDeleteSlide={deleteSlide}
-          onReorderSlides={reorderSlides}
-        />
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left sidebar toggle */}
+        <button
+          onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+          className="absolute left-2 top-2 z-20 w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-white/10"
+          style={{ background: "rgba(10,10,15,0.9)", border: "1px solid rgba(255,255,255,0.1)" }}
+          title={leftSidebarOpen ? "Hide slides" : "Show slides"}
+        >
+          {leftSidebarOpen ? <PanelLeftClose className="w-4 h-4 text-white/60" /> : <PanelLeftOpen className="w-4 h-4 text-white/60" />}
+        </button>
 
-        <div className="flex-1 flex flex-col overflow-auto">
-          <div className="flex-1 flex items-center justify-center p-8">
+        {/* Left Sidebar - Collapsible */}
+        <div 
+          className="transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0"
+          style={{ width: leftSidebarOpen ? "220px" : "0px" }}
+        >
+          <PresentationSidebar
+            presentation={presentation}
+            activeSlideIndex={activeSlideIndex}
+            onSelectSlide={setActiveSlideIndex}
+            onDuplicateSlide={duplicateSlide}
+            onDeleteSlide={deleteSlide}
+            onReorderSlides={reorderSlides}
+          />
+        </div>
+
+        {/* Main Canvas Area */}
+        <div className="flex-1 flex flex-col overflow-auto min-w-0">
+          <div className="flex-1 flex items-center justify-center p-4 md:p-8">
             {activeSlide ? (
-              <div className="w-full max-w-4xl" style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}>
-                <div className="slide-canvas" style={{ aspectRatio: "16/9" }}>
+              <div 
+                className="w-full"
+                style={{ 
+                  maxWidth: `${Math.min(900 * zoom, 1200)}px`,
+                  transform: `scale(${zoom})`, 
+                  transformOrigin: "center center" 
+                }}
+              >
+                <div className="slide-canvas w-full rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: "16/9" }}>
                   <SlideCanvas
                     slide={activeSlide}
                     isEditing
@@ -202,13 +228,29 @@ export default function PresentationStudio() {
           </div>
         </div>
 
-        <AIRefinementPanel
-          slide={activeSlide}
-          isRefining={isRefining}
-          onRefine={applyRefinement}
-          presentation={presentation}
-          showCoach={showCoach}
-        />
+        {/* Right sidebar toggle */}
+        <button
+          onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+          className="absolute right-2 top-2 z-20 w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:bg-white/10"
+          style={{ background: "rgba(10,10,15,0.9)", border: "1px solid rgba(255,255,255,0.1)" }}
+          title={rightSidebarOpen ? "Hide AI assistant" : "Show AI assistant"}
+        >
+          {rightSidebarOpen ? <PanelRightClose className="w-4 h-4 text-white/60" /> : <PanelRightOpen className="w-4 h-4 text-white/60" />}
+        </button>
+
+        {/* Right Sidebar - Collapsible */}
+        <div 
+          className="transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0"
+          style={{ width: rightSidebarOpen ? "280px" : "0px" }}
+        >
+          <AIRefinementPanel
+            slide={activeSlide}
+            isRefining={isRefining}
+            onRefine={applyRefinement}
+            presentation={presentation}
+            showCoach={showCoach}
+          />
+        </div>
       </div>
 
       {showExport && <ExportDialog presentation={presentation} onClose={() => setShowExport(false)} />}
