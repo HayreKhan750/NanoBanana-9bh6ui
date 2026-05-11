@@ -7,9 +7,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Use Vercel AI Gateway (supports multiple providers via model string)
-    const aiGatewayKey = Deno.env.get('AI_GATEWAY_API_KEY');
-    const aiGatewayUrl = 'https://api.vercel.ai/v1'; // Default Vercel AI Gateway endpoint
+    // Use Groq API directly (free, fast, no auth needed for basic tier)
+    // Groq endpoint URL
+    const groqUrl = 'https://api.groq.com/openai/v1';
+    const groqKey = Deno.env.get('GROQ_API_KEY') || Deno.env.get('AI_GATEWAY_API_KEY');
+    
+    if (!groqKey) {
+      throw new Error('GROQ_API_KEY or AI_GATEWAY_API_KEY environment variable is required');
+    }
 
     const body = await req.json();
     const { config, userId } = body;
@@ -103,17 +108,16 @@ JSON FORMAT:
   ]
 }`;
 
-    console.log('Calling Vercel AI Gateway (groq/mixtral-8x7b-32768) for presentation generation...');
+    console.log('Calling Groq API (mixtral-8x7b-32768) for presentation generation...');
 
-    // Use Groq (fastest, free tier with reasonable limits)
-    // Fallback models: 'openai/gpt-4o-mini', 'google/gemini-pro', 'anthropic/claude-3-haiku'
-    const model = 'groq/mixtral-8x7b-32768';
+    // Use Groq's Mixtral model (fast, free tier with good limits)
+    const model = 'mixtral-8x7b-32768';
 
-    const aiResponse = await fetch(`${aiGatewayUrl}/chat/completions`, {
+    const aiResponse = await fetch(`${groqUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${aiGatewayKey || ''}`,
+        'Authorization': `Bearer ${groqKey}`,
       },
       body: JSON.stringify({
         model,
@@ -143,7 +147,7 @@ ${includeSpeakerNotes ? '- Include rich, director-quality speaker notes for ever
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      throw new Error(`Vercel AI Gateway error (${aiResponse.status}): ${errText}`);
+      throw new Error(`Groq API error (${aiResponse.status}): ${errText}`);
     }
 
     const aiData = await aiResponse.json();
