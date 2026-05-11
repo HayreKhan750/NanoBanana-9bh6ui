@@ -79,7 +79,7 @@ export async function generatePresentationAI(
         // Log failed generation
         await usageTracker.logUsage(
           {
-            model: 'groq/mixtral-8x7b-32768',
+            model: 'groq-mixtral-8x7b-32768',
             tokens_used: 0,
             slide_count: 0,
             status: 'failed',
@@ -102,7 +102,7 @@ export async function generatePresentationAI(
       // Log successful generation
       await usageTracker.logUsage(
         {
-          model: 'groq/mixtral-8x7b-32768',
+          model: 'groq-mixtral-8x7b-32768',
           tokens_used: Math.ceil(presentation.totalSlides * 500), // Rough estimate
           slide_count: presentation.totalSlides,
           status: 'success',
