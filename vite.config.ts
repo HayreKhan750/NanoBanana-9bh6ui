@@ -26,9 +26,7 @@ export default defineConfig(({ command, mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
-    define: {
-      // Make GROQ_API_KEY available to frontend via import.meta.env
-      'import.meta.env.VITE_GROQ_API_KEY': JSON.stringify(process.env.GROQ_API_KEY || ''),
-    },
+    envDir: '/vercel/share',
+    envPrefix: ['VITE_', 'GROQ_'],
   };
 });

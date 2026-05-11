@@ -97,7 +97,7 @@ Return ONLY valid JSON.`;
         console.log('[v0] Calling Groq API directly...');
         
         // Call Groq API directly - get key from environment
-        const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+        const groqKey = import.meta.env.GROQ_API_KEY;
         
         if (!groqKey) {
           throw new Error('GROQ_API_KEY not configured. Please add GROQ_API_KEY to your environment variables.');
