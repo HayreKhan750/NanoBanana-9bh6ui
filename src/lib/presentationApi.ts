@@ -111,7 +111,7 @@ Return ONLY valid JSON.`;
             'Authorization': `Bearer ${groqKey}`,
           },
           body: JSON.stringify({
-            model: 'mixtral-8x7b-32768',
+            model: 'llama-3.1-70b-versatile',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: userPrompt },
@@ -161,7 +161,7 @@ Return ONLY valid JSON.`;
         // Log successful generation
         await usageTracker.logUsage(
           {
-            model: 'groq-mixtral-8x7b',
+            model: 'groq-llama-3.1-70b',
             tokens_used: Math.ceil(presentation.totalSlides * 500),
             slide_count: presentation.totalSlides,
             status: 'success',
@@ -179,7 +179,7 @@ Return ONLY valid JSON.`;
         // Log failed generation
         await usageTracker.logUsage(
           {
-            model: 'groq-mixtral-8x7b',
+            model: 'groq-llama-3.1-70b',
             tokens_used: 0,
             slide_count: 0,
             status: 'failed',

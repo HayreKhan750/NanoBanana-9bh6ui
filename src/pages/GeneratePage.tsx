@@ -121,7 +121,7 @@ export default function GeneratePage() {
 
             <div className="space-y-2 text-left">
               {[
-                { label: "Real AI generation (Groq/Mixtral)", done: progress > 30 },
+                { label: "Real AI generation (Groq/Llama 3.1)", done: progress > 30 },
                 { label: "Nano Banana 2 image generation", done: progress > 75 },
                 { label: "Cloud saving & finalizing", done: progress > 95 },
               ].map((s) => (
@@ -172,7 +172,7 @@ export default function GeneratePage() {
           </div>
           <h1 className="text-4xl font-black text-white mb-2">What's your story?</h1>
           <p className="text-white/50">
-            Powered by Groq/Mixtral AI + Nano Banana 2 Image Generation
+            Powered by Groq/Llama 3.1 AI + Nano Banana 2 Image Generation
             {user ? (
               <span className="ml-2 text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.1)", color: "#10B981", border: "1px solid rgba(16,185,129,0.2)" }}>
                 ✓ Saving to cloud
@@ -419,7 +419,7 @@ export default function GeneratePage() {
               {/* AI badge */}
               <div className="flex flex-wrap gap-2 mb-5">
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "rgba(245,197,24,0.1)", color: "#F5C518", border: "1px solid rgba(245,197,24,0.2)" }}>
-                  🧠 Groq/Mixtral AI
+                  🧠 Groq/Llama 3.1 AI
                 </span>
                 <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: "rgba(59,130,246,0.1)", color: "#3B82F6", border: "1px solid rgba(59,130,246,0.2)" }}>
                   ⚡ Request Queue & Cache
