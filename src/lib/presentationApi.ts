@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { GenerationConfig, Presentation, Slide } from '@/types/presentation';
+import type { GenerationConfig, Presentation, Slide, StylePreset, PresentationMode, InputType } from '@/types/presentation';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { aiQueue, AIQueue } from '@/lib/aiQueue';
 import { aiCache } from '@/lib/aiCache';
@@ -79,54 +79,20 @@ export async function generatePresentationAI(
         if (youtubeUrl) inputDescription = `YouTube video: ${youtubeUrl}`;
         if (websiteUrl) inputDescription = `Website: ${websiteUrl}`;
 
-        const systemPrompt = `You are an elite AI presentation designer creating world-class slide decks comparable to Gamma, Kimi, and Apple keynotes.
+        const systemPrompt = `You are an expert presentation designer. Create compelling, visually structured presentation content.
 
-YOUR TASK: Generate visually intelligent, narrative-driven, premium presentations that feel cinematic and investor-grade.
-
-CRITICAL RULES:
-1. STORYTELLING OVER BULLETS - Every deck follows: Hook → Problem → Insight → Solution → Evidence → Conclusion
-2. VISUAL-FIRST - Prioritize hero images, split layouts, infographics, timelines, comparisons over bullet lists
-3. ONE IDEA PER SLIDE - Reduce text aggressively, convert paragraphs into visual structures
-4. VARIED LAYOUTS - Mix slide types: title, section, full-image, chart, comparison, timeline, quote, CTA
-5. PREMIUM TITLES - Avoid generic titles. Use compelling headlines like "Why Traditional Systems Fail" or "The Hidden Cost"
-6. EMOTIONAL ENGAGEMENT - Design for audience impact, not information dumping
-
-SLIDE TYPES to use: title, agenda, section, concept, data, infographic, quote, comparison, timeline, summary, cta
-
-OUTPUT FORMAT (ONLY valid JSON):
+CRITICAL: Output ONLY valid JSON with this structure:
 {
-  "title": "Compelling presentation title",
-  "subtitle": "Optional subtitle",
+  "title": "string",
   "totalSlides": number,
-  "slides": [{
-    "slideNumber": number,
-    "type": "title|agenda|section|concept|data|infographic|quote|comparison|timeline|summary|cta",
-    "title": "Compelling slide headline",
-    "subtitle": "Optional context line",
-    "content": ["Key point 1", "Key point 2"],
-    "imagePrompt": "Detailed cinematic image description with style, mood, colors",
-    "speakerNotes": "What to say for this slide",
-    "layoutVariant": 1-3,
-    "animationType": "fade|slide|zoom|cinematic|stagger",
-    "chartData": {"type": "bar|pie|line|donut", "labels": [], "datasets": []} // only for data slides
-  }]
+  "slides": [{"slideNumber": number, "title": "string", "content": ["string"], "imagePrompt": "string"}]
 }`;
 
-        const userPrompt = `Create a ${slideCount}-slide ${tone} ${presentationMode} presentation on: "${inputDescription}"
-
-Design Style: ${stylePreset}
-${includeCharts ? '- Include 2-3 data visualization slides with chartData' : ''}
-${includeSpeakerNotes ? '- Add detailed speaker notes for each slide' : ''}
-
-REQUIREMENTS:
-- Start with a powerful hook/title slide
-- Build narrative tension through problem/insight slides  
-- Use varied slide types (NO repetitive layouts)
-- End with strong CTA or memorable conclusion
-- Generate cinematic, modern image prompts (dark gradients, tech aesthetics, professional photography style)
-- Make it look like a $10,000 presentation, not a school project
-
-Return ONLY valid JSON matching the schema above.`;
+        const userPrompt = `Create a ${slideCount}-slide ${tone} ${presentationMode} presentation on "${inputDescription}"
+Theme: ${stylePreset}
+${includeCharts ? '- Include data visualization slides' : ''}
+${includeSpeakerNotes ? '- Add speaker notes' : ''}
+Return ONLY valid JSON.`;
 
         console.log('[v0] Calling Groq API directly...');
         
@@ -187,7 +153,7 @@ Return ONLY valid JSON matching the schema above.`;
           slides: (parsedContent.slides || []).map((slide: any, idx: number) => ({
             id: crypto.randomUUID(),
             order: idx + 1,
-            type: slide.type || (idx === 0 ? 'title' : 'concept'),
+            type: slide.type || (idx === 0 ? 'title' : idx === 1 ? 'agenda' : 'concept'),
             title: slide.title || 'Slide',
             subtitle: slide.subtitle || '',
             content: Array.isArray(slide.content) ? slide.content : [slide.content || ''],
@@ -195,8 +161,8 @@ Return ONLY valid JSON matching the schema above.`;
             speakerNotes: slide.speakerNotes || '',
             animationType: slide.animationType || 'fade',
             layoutVariant: slide.layoutVariant || 1,
-            accentColor: '#3B82F6',
-            backgroundColor: '#0F172A',
+            accentColor: '#F5C518',
+            backgroundColor: '#0A0A0F',
             chartData: slide.chartData || undefined,
           })),
         };
