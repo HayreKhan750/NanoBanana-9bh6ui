@@ -78,7 +78,7 @@ export default function SlidePreview({ slide, isActive, onClick }: SlidePreviewP
         className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider"
         style={{ background: `${accent}25`, color: accent, border: `1px solid ${accent}40` }}
       >
-        {TYPE_LABELS[slide.type] || slide.type.toUpperCase()}
+        {TYPE_LABELS[slide.type] || slide.type?.toUpperCase() || "SLIDE"}
       </div>
 
       {/* Slide number */}

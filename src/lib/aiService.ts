@@ -50,7 +50,7 @@ export async function refineSlide(slide: Slide, action: string): Promise<Slide> 
     simplify: { content: slide.content.slice(0, 3), speakerNotes: slide.speakerNotes + "\n[Simplified for clarity]" },
     reduce_text: { content: slide.content.slice(0, 2).map((c) => c.split(" ").slice(0, 8).join(" ")) },
     improve_story: { speakerNotes: `${slide.speakerNotes}\n\n[Enhanced] Pause here for 2 seconds. Connect emotionally. Use a personal story.` },
-    more_professional: { content: slide.content.map((c) => c.charAt(0).toUpperCase() + c.slice(1)) },
+    more_professional: { content: slide.content.map((c) => c ? c.charAt(0).toUpperCase() + c.slice(1) : c) },
     add_visuals: { visualUrl: getSlideVisual(slide.type, Math.floor(Math.random() * 5)) },
   };
   return { ...slide, ...refinements[action] };
