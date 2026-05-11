@@ -1,9 +1,13 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command, mode }) => {
+  // Load env from /vercel/share/.env.project for GROQ_API_KEY
+  const projectEnv = loadEnv(mode, '/vercel/share', 'GROQ');
+  
+  return {
   server: {
     host: "::",
     port: 3000,
@@ -14,12 +18,17 @@ export default defineConfig({
       "localhost",
     ],
   },
-  plugins: [
-    react(),
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+    plugins: [
+      react(),
+    ],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
     },
-  },
+    define: {
+      // Make GROQ_API_KEY available to frontend via import.meta.env
+      'import.meta.env.VITE_GROQ_API_KEY': JSON.stringify(process.env.GROQ_API_KEY || ''),
+    },
+  };
 });

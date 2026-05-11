@@ -61,29 +61,110 @@ export async function generatePresentationAI(
   return aiQueue.enqueue(
     promptHash,
     async () => {
-      const { data, error } = await supabase.functions.invoke('generate-presentation', {
-        body: { config, userId },
-      });
+      try {
+        const {
+          prompt,
+          stylePreset,
+          presentationMode,
+          slideCount = 10,
+          includeCharts,
+          includeSpeakerNotes,
+          tone = 'professional',
+          youtubeUrl,
+          websiteUrl,
+        } = config;
 
-      if (error) {
-        let msg = error.message;
-        if (error instanceof FunctionsHttpError) {
-          try {
-            const txt = await error.context?.text();
-            msg = `[${error.context?.status}] ${txt || error.message}`;
-          } catch {
-            msg = error.message;
-          }
-        }
+        // Build input description
+        let inputDescription = prompt;
+        if (youtubeUrl) inputDescription = `YouTube video: ${youtubeUrl}`;
+        if (websiteUrl) inputDescription = `Website: ${websiteUrl}`;
+
+        const systemPrompt = `You are an expert presentation designer. Create compelling, visually structured presentation content.
+
+CRITICAL: Output ONLY valid JSON with this structure:
+{
+  "title": "string",
+  "totalSlides": number,
+  "slides": [{"slideNumber": number, "title": "string", "content": ["string"], "imagePrompt": "string"}]
+}`;
+
+        const userPrompt = `Create a ${slideCount}-slide ${tone} ${presentationMode} presentation on "${inputDescription}"
+Theme: ${stylePreset}
+${includeCharts ? '- Include data visualization slides' : ''}
+${includeSpeakerNotes ? '- Add speaker notes' : ''}
+Return ONLY valid JSON.`;
+
+        console.log('[v0] Calling Groq API directly...');
         
-        // Log failed generation
+        // Call Groq API directly - get key from environment
+        const groqKey = (import.meta.env as any).VITE_GROQ_API_KEY || 
+                       (typeof window !== 'undefined' && (window as any).__GROQ_API_KEY__);
+        
+        if (!groqKey) {
+          throw new Error('GROQ_API_KEY not configured. Please add GROQ_API_KEY to your environment variables.');
+        }
+
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`,
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.7,
+            max_tokens: 4000,
+          }),
+        });
+
+        if (!groqResponse.ok) {
+          const errorText = await groqResponse.text();
+          throw new Error(`Groq API error (${groqResponse.status}): ${errorText}`);
+        }
+
+        const groqData = await groqResponse.json();
+        const content = groqData.choices[0].message.content;
+
+        // Parse JSON response
+        let jsonStr = content.trim();
+        if (jsonStr.includes('```json')) {
+          jsonStr = jsonStr.split('```json')[1].split('```')[0].trim();
+        } else if (jsonStr.includes('```')) {
+          jsonStr = jsonStr.split('```')[1].split('```')[0].trim();
+        }
+
+        const parsedContent = JSON.parse(jsonStr);
+
+        // Structure presentation
+        const presentation: Presentation = {
+          id: crypto.randomUUID(),
+          title: parsedContent.title || 'Untitled',
+          totalSlides: parsedContent.totalSlides || slideCount,
+          slides: (parsedContent.slides || []).map((slide: any, idx: number) => ({
+            slideNumber: idx + 1,
+            title: slide.title || 'Slide',
+            content: Array.isArray(slide.content) ? slide.content : [slide.content || ''],
+            imagePrompt: slide.imagePrompt || 'Professional background',
+            speakerNotes: slide.speakerNotes || '',
+          })),
+          created_at: new Date().toISOString(),
+          user_id: userId,
+        };
+
+        // Cache the result
+        await aiCache.set(promptHash, presentation);
+
+        // Log successful generation
         await usageTracker.logUsage(
           {
-            model: 'groq/mixtral-8x7b-32768',
-            tokens_used: 0,
-            slide_count: 0,
-            status: 'failed',
-            error_message: msg,
+            model: 'groq-llama-3.3-70b',
+            tokens_used: Math.ceil(presentation.totalSlides * 500),
+            slide_count: presentation.totalSlides,
+            status: 'success',
             input_type: config.inputType || 'text',
             cache_hit: false,
             queue_wait_ms: Date.now() - startTime,
@@ -91,29 +172,27 @@ export async function generatePresentationAI(
           userId
         );
 
-        throw new Error(msg);
+        return presentation;
+      } catch (error: any) {
+        console.error('[v0] Generation error:', error.message);
+
+        // Log failed generation
+        await usageTracker.logUsage(
+          {
+            model: 'groq-llama-3.3-70b',
+            tokens_used: 0,
+            slide_count: 0,
+            status: 'failed',
+            error_message: error.message,
+            input_type: config.inputType || 'text',
+            cache_hit: false,
+            queue_wait_ms: Date.now() - startTime,
+          },
+          userId
+        );
+
+        throw error;
       }
-
-      const presentation = data.presentation as Presentation;
-
-      // Cache the result
-      await aiCache.set(promptHash, presentation);
-
-      // Log successful generation
-      await usageTracker.logUsage(
-        {
-          model: 'groq/mixtral-8x7b-32768',
-          tokens_used: Math.ceil(presentation.totalSlides * 500), // Rough estimate
-          slide_count: presentation.totalSlides,
-          status: 'success',
-          input_type: config.inputType || 'text',
-          cache_hit: false,
-          queue_wait_ms: Date.now() - startTime,
-        },
-        userId
-      );
-
-      return presentation;
     },
     (queueStatus) => {
       const position = aiQueue.getQueuePosition(queueStatus.id);
